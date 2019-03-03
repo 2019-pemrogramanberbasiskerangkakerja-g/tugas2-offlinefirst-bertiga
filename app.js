@@ -17,7 +17,7 @@ app.use(session({secret: "Shh, its a secret!"}));
 
 app.get('/', function (req, res) {
     res.send('Hello World!')
-    
+
     internetAvailable().then(function(){
         console.log("Internet available")
     }).catch(function(){
@@ -26,9 +26,7 @@ app.get('/', function (req, res) {
 })
 
 app.get('/login', function(req, res){
-    if(req.session.username) {
-        res.send('logged in <br> <a href='+'/logout'+'>Logout</a>')
-    }
+    if(req.session.username) loggedIn(req, res)
     else res.sendFile(__dirname + '/view/login.html')
 })
 
@@ -39,7 +37,7 @@ app.post('/login', function(req, res){
     var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     var dateTime = date+' '+time;
 
-    
+
     internetAvailable().then(function(){
         var body = ''
         req.setEncoding('utf-8')
@@ -48,18 +46,13 @@ app.post('/login', function(req, res){
         })
         req.on('end', function(){
             var data = qs.parse(body)
-            users.get(data.username).then((body) => {
-                if(bcrypt.compareSync(data.password, body.password)){
-                    // var sess = {
-                    //     secret: genuuid(),
-                    //     cookie: {}
-                    // }
-                    // app.set('truct proxy', 1)
-                    // sess.cookie.secure = true
+            users.get(data.username, function(err, body){
+                if(err) res.send('user not found')
+                else if(bcrypt.compareSync(data.password, body.password)){
                     req.session.username = data.username
                     console.log(req.session.username)
                     log.insert({ _id: dateTime, log: "login suksess" })
-                    res.send('logged in <br> <a href='+'/logout'+'>Logout</a>')
+                     loggedIn(req, res)
                 }
                 else{
                     log.insert({ _id: dateTime, log: "login gagal (password salah)" })
@@ -114,3 +107,7 @@ app.get('/logout', function(req, res){
 app.listen(3000, function () {
     console.log('Example app listening on port 3000!')
 })
+
+function loggedIn(req, res){
+    res.send('Hello, '+req.session.username+'<br> <a href='+'/logout'+'>Logout</a>')
+}
