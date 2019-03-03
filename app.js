@@ -16,7 +16,8 @@ app.use(cookieParser());
 app.use(session({secret: "Shh, its a secret!"}));
 
 app.get('/', function (req, res) {
-    res.send('Hello World!')
+    if(req.session.username) loggedIn(req, res)
+    else res.redirect('/login')
 
     internetAvailable().then(function(){
         console.log("Internet available")
@@ -26,8 +27,7 @@ app.get('/', function (req, res) {
 })
 
 app.get('/login', function(req, res){
-    if(req.session.username) loggedIn(req, res)
-    else res.sendFile(__dirname + '/view/login.html')
+    res.sendFile(__dirname + '/view/login.html')
 })
 
 app.post('/login', function(req, res){
@@ -65,6 +65,7 @@ app.post('/login', function(req, res){
         res.send('tidak terhubung ke internet')
     })
 })
+
 app.get('/register', function(req, res){
     res.sendFile(__dirname + '/view/register.html')
 })
