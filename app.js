@@ -1,7 +1,8 @@
 var express = require('express'),
     nano = require('nano')('http://localhost:5984'),
     nanoweb = require('nano')('https://couchdb-2ac681.smileupps.com/'),
-    users = nanoweb.db.use('users'),
+    usersweb = nanoweb.db.use('users'),
+    users = nano.db.use('users'),
     log = nano.db.use('log'),
     qs = require('querystring'),
     bcrypt = require('bcrypt-nodejs'),
@@ -37,7 +38,6 @@ app.post('/login', function(req, res){
     var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     var dateTime = date+' '+time;
 
-
     internetAvailable().then(function(){
         var body = ''
         req.setEncoding('utf-8')
@@ -47,16 +47,32 @@ app.post('/login', function(req, res){
         req.on('end', function(){
             var data = qs.parse(body)
             users.get(data.username, function(err, body){
-                if(err) res.send('user not found')
-                else if(bcrypt.compareSync(data.password, body.password)){
-                    req.session.username = data.username
-                    console.log(req.session.username)
-                    log.insert({ _id: dateTime, log: "login suksess" })
-                     loggedIn(req, res)
+                if(err){
+                    usersweb.get(data.username, function(err, body){
+                        if(err) res.send('user not found')
+                        else if(bcrypt.compareSync(data.password, body.password)){
+                            req.session.username = data.username
+                            console.log('online db: '+req.session.username)
+                            log.insert({ _id: dateTime, log: "login suksess" })
+                            loggedIn(req, res)
+                        }
+                        else{
+                            log.insert({ _id: dateTime, log: "login gagal (password salah)" })
+                            res.send('password wrong')
+                        }
+                    })
                 }
                 else{
-                    log.insert({ _id: dateTime, log: "login gagal (password salah)" })
-                    res.send('password wrong')
+                    if(bcrypt.compareSync(data.password, body.password)){
+                        req.session.username = data.username
+                        console.log('offline db: '+req.session.username)
+                        log.insert({ _id: dateTime, log: "login suksess" })
+                        loggedIn(req, res)
+                    }
+                    else{
+                        log.insert({ _id: dateTime, log: "login gagal (password salah)" })
+                        res.send('password wrong')
+                    }
                 }
             })
         })
@@ -86,6 +102,10 @@ app.post('/register', function(req, res){
         req.on('end', function(){
             var data = qs.parse(body)
             if(data.password == data.password_confirm){
+                usersweb.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
+                    if (err) console.log(err)
+                    else console.log(body)
+                })
                 users.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
                     if (err) console.log(err)
                     else console.log(body)
