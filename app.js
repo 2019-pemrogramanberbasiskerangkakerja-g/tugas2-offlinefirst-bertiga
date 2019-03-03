@@ -2,6 +2,8 @@ var express = require('express'),
     nano = require('nano')('http://localhost:5984'),
     users = nano.db.use('users'),
     qs = require('querystring'),
+    bcrypt = require('bcrypt-nodejs'),
+    session = require('express-session'),
     data = []
 
 var app = express()
@@ -14,7 +16,28 @@ app.get('/login', function(req, res){
 })
 
 app.post('/login', function(req, res){
-    res.send('login post')
+    var body = ''
+    req.setEncoding('utf-8')
+    req.on('data', function(chunk){
+        body += chunk
+    })
+    req.on('end', function(){
+        var data = qs.parse(body)
+        users.get(data.username).then((body) => {
+            if(bcrypt.compareSync(data.password, body.password)){
+                // var sess = {
+                //     secret: genuuid(),
+                //     cookie: {}
+                // }
+                // app.set('truct proxy', 1)
+                // sess.cookie.secure = true
+                res.send('logged in')
+            }
+            else{
+                res.send('password wrong')
+            }
+        })
+    })
 })
 
 app.get('/register', function(req, res){
@@ -30,7 +53,7 @@ app.post('/register', function(req, res){
     req.on('end', function(){
         var data = qs.parse(body)
         if(data.password == data.password_confirm){
-            users.insert({ username: data.username, password: data.password }, null, function (err, body) {
+            users.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
                 if (err) console.log(err)
                 else console.log(body)
             })

@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/2019-pemrogramanberbasiskerangkakerja-g/tugas1-helloworld-SherryVine#readme",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
     "express": "^4.16.4",
+    "express-session": "^1.15.6",
     "nano": "^8.0.0"
   }
 }
