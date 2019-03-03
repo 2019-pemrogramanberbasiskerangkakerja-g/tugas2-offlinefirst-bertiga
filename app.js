@@ -7,6 +7,7 @@ var express = require('express'),
     bcrypt = require('bcrypt-nodejs'),
     cookieParser = require('cookie-parser'),
     session = require('express-session'),
+    internetAvailable = require("internet-available"),
     data = []
 
 var app = express()
@@ -16,69 +17,98 @@ app.use(session({secret: "Shh, its a secret!"}));
 
 app.get('/', function (req, res) {
     res.send('Hello World!')
+    
+    internetAvailable().then(function(){
+        console.log("Internet available")
+    }).catch(function(){
+        console.log("No internet")
+    })
 })
 
 app.get('/login', function(req, res){
     if(req.session.username) {
-        res.send('logged in')
+        res.send('logged in <br> <a href='+'/logout'+'>Logout</a>')
     }
     else res.sendFile(__dirname + '/view/login.html')
 })
 
 app.post('/login', function(req, res){
-    var body = ''
-    req.setEncoding('utf-8')
-    req.on('data', function(chunk){
-        body += chunk
-    })
-    req.on('end', function(){
-        var data = qs.parse(body)
-        users.get(data.username).then((body) => {
-            if(bcrypt.compareSync(data.password, body.password)){
-                // var sess = {
-                //     secret: genuuid(),
-                //     cookie: {}
-                // }
-                // app.set('truct proxy', 1)
-                // sess.cookie.secure = true
-                req.session.username = data.username
-                console.log(req.session.username)
-                var today = new Date();
-                var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-                var dateTime = date+' '+time;
-                log.insert({ _id: dateTime, log: "login suksess" })
-                res.send('logged in')
-            }
-            else{
-                log.insert({ _id: dateTime, log: "login gagal (password salah)" })
-                res.send('password wrong')
-            }
+
+    var today = new Date();
+    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    var dateTime = date+' '+time;
+
+    
+    internetAvailable().then(function(){
+        var body = ''
+        req.setEncoding('utf-8')
+        req.on('data', function(chunk){
+            body += chunk
         })
+        req.on('end', function(){
+            var data = qs.parse(body)
+            users.get(data.username).then((body) => {
+                if(bcrypt.compareSync(data.password, body.password)){
+                    // var sess = {
+                    //     secret: genuuid(),
+                    //     cookie: {}
+                    // }
+                    // app.set('truct proxy', 1)
+                    // sess.cookie.secure = true
+                    req.session.username = data.username
+                    console.log(req.session.username)
+                    log.insert({ _id: dateTime, log: "login suksess" })
+                    res.send('logged in <br> <a href='+'/logout'+'>Logout</a>')
+                }
+                else{
+                    log.insert({ _id: dateTime, log: "login gagal (password salah)" })
+                    res.send('password wrong')
+                }
+            })
+        })
+    }).catch(function(){
+        log.insert({ _id: dateTime, log: "login gagal (no connection)" })
+        res.send('tidak terhubung ke internet')
     })
 })
-
 app.get('/register', function(req, res){
     res.sendFile(__dirname + '/view/register.html')
 })
 
 app.post('/register', function(req, res){
-    var body = ''
-    req.setEncoding('utf-8')
-    req.on('data', function(chunk){
-        body += chunk
+
+    var today = new Date();
+    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    var dateTime = date+' '+time;
+
+    internetAvailable().then(function(){
+        var body = ''
+        req.setEncoding('utf-8')
+        req.on('data', function(chunk){
+            body += chunk
+        })
+        req.on('end', function(){
+            var data = qs.parse(body)
+            if(data.password == data.password_confirm){
+                users.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
+                    if (err) console.log(err)
+                    else console.log(body)
+                })
+                res.send('Register sukses')
+            }
+            else res.send('Password gak bener nih')
+        })
+    }).catch(function(){
+        log.insert({ _id: dateTime, log: "register gagal (no connection)" })
+        res.send('tidak terhubung ke internet')
     })
-    req.on('end', function(){
-        var data = qs.parse(body)
-        if(data.password == data.password_confirm){
-            users.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
-                if (err) console.log(err)
-                else console.log(body)
-            })
-            res.send('Register sukses')
-        }
-        else res.send('Password gak bener nih')
-    })
+})
+
+app.get('/logout', function(req, res){
+    req.session.username = null
+    res.redirect('/login');
 })
 
 app.listen(3000, function () {
