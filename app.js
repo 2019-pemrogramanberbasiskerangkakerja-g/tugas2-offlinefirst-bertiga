@@ -107,10 +107,6 @@ app.post('/register', function(req, res){
                     if (err) console.log(err)
                     else console.log(body)
                 })
-                users.insert({ _id: data.username, username: data.username, password: bcrypt.hashSync(data.password) }, null, function (err, body) {
-                    if (err) console.log(err)
-                    else console.log(body)
-                })
                 res.send('Register sukses')
             }
             else res.send('Password gak bener nih')
