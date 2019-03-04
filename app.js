@@ -38,7 +38,7 @@ app.post('/login', function(req, res){
     var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
     var dateTime = date+' '+time;
 
-    internetAvailable().then(function(){
+    //internetAvailable().then(function(){
         var body = ''
         req.setEncoding('utf-8')
         req.on('data', function(chunk){
@@ -76,10 +76,11 @@ app.post('/login', function(req, res){
                 }
             })
         })
-    }).catch(function(){
+    /*}).catch(function(){
+        if()
         log.insert({ _id: dateTime, log: "login gagal (no connection)" })
         res.send('tidak terhubung ke internet')
-    })
+    })*/
 })
 
 app.get('/register', function(req, res){
