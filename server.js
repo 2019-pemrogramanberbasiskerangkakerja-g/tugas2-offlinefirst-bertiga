@@ -18,7 +18,7 @@ app.use(session({secret: "Shh, its a secret!"}));
 
 app.get('/', function (req, res) {
     if(req.session.username) loggedIn(req, res)
-    else res.redirect('/login')
+    else res.redirect('/register')
 
     internetAvailable().then(function(){
         console.log("Internet available")
